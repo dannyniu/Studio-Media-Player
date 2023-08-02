@@ -18,6 +18,7 @@ class MovieView : NSView
     var asset: AVAsset?
     var item: AVPlayerItem?
     var vlink: CVDisplayLink?
+    var freq: Double = 1
 //* #unless USE_AV_PLAYERV_VIEW
     var player: AVPlayer?
     var playinglayer: AVPlayerLayer?
@@ -33,7 +34,8 @@ class MovieView : NSView
         
         var cvret: CVReturn
         
-        cvret = CVDisplayLinkCreateWithActiveCGDisplays(&vlink)
+        cvret = CVDisplayLinkCreateWithCGDisplay(
+            CGMainDisplayID(), &vlink)
         if( vlink == nil ) { return false }
         
         let me: UnsafeMutableRawPointer =
@@ -70,7 +72,6 @@ class MovieView : NSView
         
         self.playinglayer = .init(player: self.player!)
         self.layer = self.playinglayer
-        
     }
     
     func rects_recalc()
@@ -107,10 +108,13 @@ class MovieView : NSView
     func video_render(_ d: CVTimeStamp)
     {
         // let t: CMTime = player!.currentTime()
+        freq = CVGetHostClockFrequency()
         
-        if( (d.videoTime * 120) % // should be 120.
+        /* if( (d.videoTime * 120) % // should be 120.
             (Int64(d.videoTimeScale) * 2) >=
-            Int64(d.videoTimeScale) )
+            Int64(d.videoTimeScale) ) */
+        if( CVGetCurrentHostTime() * 120 %
+            UInt64(freq * 2) >= UInt64(freq) )
         {
             eye_right = true
         }
@@ -129,7 +133,6 @@ class MovieView : NSView
                 CATransaction.commit()
             }
             self.needsDisplay = true
-            //self.displayIgnoringOpacity(self.bounds)
             self.window!.display()
         }
     }
