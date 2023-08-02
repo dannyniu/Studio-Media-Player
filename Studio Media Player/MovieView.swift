@@ -19,10 +19,7 @@ class MovieView : NSView
     var item: AVPlayerItem?
     var vlink: CVDisplayLink?
 //* #unless USE_AV_PLAYERV_VIEW
-    var vout: AVPlayerItemVideoOutput?
     var player: AVPlayer?
-    var cgi: CGImage?
-    var cix: CIContext?
     var playinglayer: AVPlayerLayer?
 //*/
     
@@ -33,7 +30,6 @@ class MovieView : NSView
         self.asset = nil
         self.item = nil
         self.player = .init()
-        self.vout = .init()
         
         var cvret: CVReturn
         
@@ -51,23 +47,31 @@ class MovieView : NSView
         // return true
     }
     
-    func assign_asset(_ asset: AVAsset)
-    {
-        self.asset = asset
-        item = .init(asset: self.asset!)
-        self.player?.replaceCurrentItem(with: item)
-        item!.add(vout!)
-        
-        self.playinglayer = .init(player: self.player!)
-        self.layer = self.playinglayer
-        
-    }
-    
     var eye_right: Bool = false
     var irect: CGRect = .init()
     var srect: CGRect = .init()
     var orect: CGRect = .init()
     var vrect: CGRect = .init()
+    
+    func assign_asset(_ asset: AVAsset) async
+    {
+        self.asset = asset
+        item = .init(asset: self.asset!)
+        self.player?.replaceCurrentItem(with: item)
+        
+        for track: AVAssetTrack in self.asset!.tracks
+        {
+            if( (try? await track.load(.isEnabled)) ?? false &&
+                track.mediaType == AVMediaType.video )
+            {
+                self.irect.size = try! await track.load(.naturalSize)
+            }
+        }
+        
+        self.playinglayer = .init(player: self.player!)
+        self.layer = self.playinglayer
+        
+    }
     
     func rects_recalc()
     {
@@ -100,67 +104,17 @@ class MovieView : NSView
         }
     }
     
-/* #unless USE_AV_PLAYERV_VIEW
-    override func draw(_ rect: NSRect)
-    {
-        rects_recalc()
-        
-        var nsg: NSGraphicsContext? = nil
-        nsg = NSGraphicsContext.current
-        
-        let ctx: CGContext = nsg!.cgContext
-        ctx.setFillColor(gray: 0.0, alpha: 1.0)
-        ctx.fill(orect)
-        if( cgi != nil ) { ctx.draw(cgi!, in: orect) }
-        ctx.flush()
-        
-        // let ctx:CIContext = NSGraphicsContext.current!.ciContext
-        // ctx.draw(CIImage.black, in: orect, from: CGRect(x:0, y:0, width:64, height:64))
-        // if( cii != nil ) { ctx.draw(cii!, in: vrect, from: srect) }
-    }
-*/
-    
-    // var ts: CMTime? = nil
-    
     func video_render(_ d: CVTimeStamp)
     {
-        let t: CMTime = player!.currentTime()
-        /* if( ts == nil ) { ts = t } else
-        {
-            print(1 / (t.seconds - ts!.seconds))
-            ts = t
-        } */
+        // let t: CMTime = player!.currentTime()
         
-        var cvpb: CVPixelBuffer?
-        var cii: CIImage?
-        
-        if( vout?.hasNewPixelBuffer(forItemTime: t) ?? false )
-        {
-            cvpb = vout!.copyPixelBuffer(
-                forItemTime: t, itemTimeForDisplay: nil)
-            cii = .init(cvPixelBuffer: cvpb!)
-            irect = cii!.extent
-        }
-        
-        if( (d.videoTime * 120) % // should be 120.
+        if( (d.videoTime * 30) % // should be 120.
             (Int64(d.videoTimeScale) * 2) >=
             Int64(d.videoTimeScale) )
         {
             eye_right = true
         }
         else { eye_right = false }
-        
-        /* if( cii != nil )
-        {
-            srect = CGRect(origin: irect.origin,
-                           size: CGSize(width: irect.width / 2,
-                                        height: irect.height))
-            
-            if( eye_right )
-            {
-                srect = srect.offsetBy(dx: irect.width / 2, dy: 0)
-            }
-        } */
         
         DispatchQueue.main.sync {
             if( self.layer != nil && self.irect.width > 0 )

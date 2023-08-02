@@ -35,9 +35,11 @@ class AppDelegate: NSObject, NSApplicationDelegate
             (res: NSApplication.ModalResponse) -> Void in
             if( res != NSApplication.ModalResponse.OK ) { return }
             
-            let ass: AVURLAsset = .init(url: opp.urls[0])
-            self.mvv.assign_asset(ass)
-            self.mvv.player?.play()
+            Task.detached {
+                let ass: AVURLAsset = await .init(url: opp.urls[0])
+                await self.mvv.assign_asset(ass)
+                await self.mvv.player?.play()
+            }
         })
         
     }
