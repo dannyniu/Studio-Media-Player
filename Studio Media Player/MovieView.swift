@@ -108,7 +108,7 @@ class MovieView : NSView
     {
         // let t: CMTime = player!.currentTime()
         
-        if( (d.videoTime * 30) % // should be 120.
+        if( (d.videoTime * 120) % // should be 120.
             (Int64(d.videoTimeScale) * 2) >=
             Int64(d.videoTimeScale) )
         {
