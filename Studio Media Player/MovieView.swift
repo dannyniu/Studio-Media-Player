@@ -19,6 +19,7 @@ class MovieView : NSView
     var item: AVPlayerItem?
     var vlink: CVDisplayLink?
     var freq: Double = 1
+    var timer: Timer?
 //* #unless USE_AV_PLAYERV_VIEW
     var player: AVPlayer?
     var playinglayer: AVPlayerLayer?
@@ -33,6 +34,7 @@ class MovieView : NSView
         self.player = .init()
         
         var cvret: CVReturn
+        NSCursor.setHiddenUntilMouseMoves(true)
         
         cvret = CVDisplayLinkCreateWithCGDisplay(
             CGMainDisplayID(), &vlink)
@@ -44,6 +46,10 @@ class MovieView : NSView
             vlink!, vlink_callback, me)
         
         if( cvret == kCVReturnSuccess ) {
+            timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true, block: {(timer: Timer) in
+                NSCursor.setHiddenUntilMouseMoves(true)
+            })
+            timer!.fire()
             return true
         } else { return false }
         // return true
@@ -108,13 +114,13 @@ class MovieView : NSView
     func video_render(_ d: CVTimeStamp)
     {
         // let t: CMTime = player!.currentTime()
-        freq = CVGetHostClockFrequency()
+        // freq = CVGetHostClockFrequency()
         
-        /* if( (d.videoTime * 120) % // should be 120.
+        if( (d.videoTime * 120) % // should be 120.
             (Int64(d.videoTimeScale) * 2) >=
-            Int64(d.videoTimeScale) ) */
-        if( CVGetCurrentHostTime() * 120 %
-            UInt64(freq * 2) >= UInt64(freq) )
+            Int64(d.videoTimeScale) )
+        /* if( CVGetCurrentHostTime() * 120 %
+            UInt64(freq * 2) >= UInt64(freq) ) */
         {
             eye_right = true
         }
@@ -158,6 +164,18 @@ class MovieView : NSView
     @IBAction func seekbackward(_ sender: Any)
     {
         player!.seek(to: CMTime(seconds: player!.currentTime().seconds - 5,
+                                preferredTimescale: 600))
+    }
+    
+    @IBAction func fastforward(_ sender: Any)
+    {
+        player!.seek(to: CMTime(seconds: player!.currentTime().seconds + 15,
+                                preferredTimescale: 600))
+    }
+    
+    @IBAction func fastbackward(_ sender: Any)
+    {
+        player!.seek(to: CMTime(seconds: player!.currentTime().seconds - 15,
                                 preferredTimescale: 600))
     }
     

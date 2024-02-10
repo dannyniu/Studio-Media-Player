@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="20037" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="20037"/>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -110,6 +111,18 @@
                                     <action selector="seekbackward:" target="Qju-S2-pXw" id="Mei-jl-FKN"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Fast Forward" keyEquivalent="" id="LST-Ys-zh8">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="fastforward:" target="Qju-S2-pXw" id="d7A-JD-UCp"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Fast Backward" keyEquivalent="" id="Kvt-sj-YAb">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="fastbackward:" target="Qju-S2-pXw" id="XFN-H9-bfp"/>
+                                </connections>
+                            </menuItem>
                             <menuItem title="Rewind to Start" keyEquivalent="" id="nft-HO-Gq2">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
@@ -164,13 +177,13 @@
                     </menu>
                 </menuItem>
             </items>
-            <point key="canvasLocation" x="77" y="177"/>
+            <point key="canvasLocation" x="110" y="143"/>
         </menu>
         <window title="Studio Media Player" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="QvC-M9-y7g">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="335" y="390" width="864" height="486"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1600" height="875"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1055"/>
             <value key="minSize" type="size" width="640" height="360"/>
             <view key="contentView" id="EiT-Mj-1SZ">
                 <rect key="frame" x="0.0" y="0.0" width="864" height="486"/>
