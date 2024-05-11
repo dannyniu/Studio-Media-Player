@@ -6,6 +6,7 @@
 //
 
 import Cocoa
+import Foundation
 import AVFoundation
 
 @main
@@ -18,6 +19,10 @@ class AppDelegate: NSObject, NSApplicationDelegate
         // Insert code here to initialize your application
         
         window.backgroundColor = NSColor.black
+        
+        try! Process.run(URL(string: "file:///usr/bin/caffeinate")!, arguments: [
+            "-d", "-w", String(ProcessInfo.processInfo.processIdentifier)
+        ])
         
         //mvv.setup()
         if( !mvv.setup() ) { exit(1) }
