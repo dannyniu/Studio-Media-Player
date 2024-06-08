@@ -25,13 +25,18 @@ class MovieView : NSView
     var playinglayer: AVPlayerLayer?
 //*/
     
+    let clockid = CLOCK_REALTIME
+    
     override var isOpaque: Bool { get { return true } }
+    override var wantsUpdateLayer: Bool { get { return true} }
     
     func setup() -> Bool
     {
         self.asset = nil
         self.item = nil
         self.player = .init()
+        
+        clock_gettime(clockid, &ts_last)
         
         var cvret: CVReturn
         NSCursor.setHiddenUntilMouseMoves(true)
@@ -55,6 +60,8 @@ class MovieView : NSView
         // return true
     }
     
+    var ts_last: timespec = .init()
+    var flip: Bool = false
     var eye_right: Bool = false
     var irect: CGRect = .init()
     var srect: CGRect = .init()
@@ -99,7 +106,7 @@ class MovieView : NSView
         let osize: CGSize = CGSize(width: orect.width * 2,
                                    height: oh)
         
-        if( eye_right )
+        if( eye_right != flip )
         {
             vrect = CGRect(origin: CGPoint(x: -orect.width, y: oy),
                            size: osize)
@@ -116,17 +123,30 @@ class MovieView : NSView
         // let t: CMTime = player!.currentTime()
         // freq = CVGetHostClockFrequency()
         
+        var ts: timespec = .init()
+        var elapsed: Int64
+        
+        clock_gettime(clockid, &ts)
+        elapsed = Int64(ts.tv_sec) - Int64(ts_last.tv_sec)
+        elapsed *= 1000_000_000
+        elapsed += Int64(ts.tv_nsec) - Int64(ts_last.tv_nsec)
+        elapsed *= 120
+        elapsed /= 2000_000_750
+        flip = elapsed % 2 == 1
+        ts_last = ts
+        
         if( (d.videoTime * 120) % // should be 120.
             (Int64(d.videoTimeScale) * 2) >=
-            Int64(d.videoTimeScale) )
+            Int64(d.videoTimeScale) ) // */
         /* if( CVGetCurrentHostTime() * 120 %
-            UInt64(freq * 2) >= UInt64(freq) ) */
+            UInt64(freq * 2) >= UInt64(freq) ) // */
+        // if( !eye_right )
         {
             eye_right = true
         }
         else { eye_right = false }
         
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async {
             if( self.layer != nil && self.irect.width > 0 )
             {
                 CATransaction.begin()
@@ -138,7 +158,7 @@ class MovieView : NSView
                 //print(self.eye_right, self.vrect)
                 CATransaction.commit()
             }
-            self.needsDisplay = true
+            //self.needsDisplay = true
             self.window!.display()
         }
     }
@@ -204,8 +224,8 @@ func vlink_callback(
 {
     let mvview: MovieView =
     Unmanaged.fromOpaque(arg_mvview!).takeUnretainedValue()
-    mvview.video_render(inNow.pointee)
+    mvview.video_render(inOutputTime.pointee)
     
     return kCVReturnSuccess
 }
-//*/
+// */
