@@ -131,8 +131,9 @@ class MovieView : NSView
         elapsed *= 1000_000_000
         elapsed += Int64(ts.tv_nsec) - Int64(ts_last.tv_nsec)
         elapsed *= 120
-        elapsed /= 2048_000_000 // tested: 2000_000_750
-        flip = flip != (elapsed % 2 >= 1)
+        // elapsed /= 2000_000_750 // this value had been tested (2024-06-09).
+        elapsed = (elapsed - 32_000_000) / 2016_000_000
+        if( elapsed % 2 >= 1 ) { flip = !flip }
         ts_last = ts
         
         if( (d.videoTime * 120) % // should be 120.
