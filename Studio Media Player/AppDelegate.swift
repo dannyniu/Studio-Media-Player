@@ -20,16 +20,12 @@ class AppDelegate: NSObject, NSApplicationDelegate
         
         window.backgroundColor = NSColor.black
         
-        try! Process.run(URL(string: "file:///usr/bin/caffeinate")!, arguments: [
-            "-d", "-w", String(ProcessInfo.processInfo.processIdentifier)
-        ])
-        
         //mvv.setup()
         if( !mvv.setup() ) { exit(1) }
-        CVDisplayLinkStart(mvv.vlink!) // #unless USE_AV_PLAYER_VIEW: 
+        mvv.vlink!.add(to: .current, forMode: .default)
     }
     
-    @IBAction func playOpenMedia(_ sender: Any)
+    @IBAction func open1media(_ sender: Any)
     {
         let opp: NSOpenPanel = .init()
         opp.canChooseFiles = true
@@ -43,7 +39,6 @@ class AppDelegate: NSObject, NSApplicationDelegate
             Task.detached {
                 let ass: AVURLAsset = await .init(url: opp.urls[0])
                 await self.mvv.assign_asset(ass)
-                await self.mvv.player?.play()
             }
         })
         
@@ -55,6 +50,13 @@ class AppDelegate: NSObject, NSApplicationDelegate
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         return false
+    }
+
+    @IBOutlet var widgetview: NSView!
+    
+    @IBAction func ToggleWidgetView(_ sender: Any)
+    {
+        widgetview.isHidden = !widgetview.isHidden;
     }
 }
 
