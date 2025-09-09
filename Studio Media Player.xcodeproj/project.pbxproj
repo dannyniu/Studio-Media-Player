@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8801CFCC2E706DF40037FEED /* MovieDoc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8801CFCB2E706DF40037FEED /* MovieDoc.swift */; };
+		8801CFD02E70799A0037FEED /* MovieDocCtrl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8801CFCF2E70799A0037FEED /* MovieDocCtrl.swift */; };
 		882E537F2872AFAF00D90799 /* MovieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8899FF3528716E0200FB08BD /* MovieView.swift */; };
 		882E53802872AFB000D90799 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8899FF0C28716C2E00FB08BD /* AppDelegate.swift */; };
 		8899FF0F28716C2F00FB08BD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8899FF0E28716C2F00FB08BD /* Assets.xcassets */; };
@@ -14,6 +16,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8801CFCB2E706DF40037FEED /* MovieDoc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieDoc.swift; sourceTree = "<group>"; };
+		8801CFCF2E70799A0037FEED /* MovieDocCtrl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieDocCtrl.swift; sourceTree = "<group>"; };
 		8899FF0928716C2E00FB08BD /* Studio Media Player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Studio Media Player.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8899FF0C28716C2E00FB08BD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		8899FF0E28716C2F00FB08BD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -22,6 +26,7 @@
 		8899FF3528716E0200FB08BD /* MovieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieView.swift; sourceTree = "<group>"; };
 		88BA5B8128755C4A00873267 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		88BA5B8228755DD200873267 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		88C69B3B2E70419300FDC73B /* Studio-Media-Player-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Studio-Media-Player-Info.plist"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +61,9 @@
 		8899FF0B28716C2E00FB08BD /* Studio Media Player */ = {
 			isa = PBXGroup;
 			children = (
+				88C69B3B2E70419300FDC73B /* Studio-Media-Player-Info.plist */,
+				8801CFCB2E706DF40037FEED /* MovieDoc.swift */,
+				8801CFCF2E70799A0037FEED /* MovieDocCtrl.swift */,
 				8899FF3528716E0200FB08BD /* MovieView.swift */,
 				8899FF0C28716C2E00FB08BD /* AppDelegate.swift */,
 				8899FF0E28716C2F00FB08BD /* Assets.xcassets */,
@@ -136,6 +144,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8801CFD02E70799A0037FEED /* MovieDocCtrl.swift in Sources */,
+				8801CFCC2E706DF40037FEED /* MovieDoc.swift in Sources */,
 				882E537F2872AFAF00D90799 /* MovieView.swift in Sources */,
 				882E53802872AFB000D90799 /* AppDelegate.swift in Sources */,
 			);
@@ -285,6 +295,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Studio-Media-Player-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Studio Media Player";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -292,7 +303,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.dannyniu.Studio-Media-Player";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -314,6 +325,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Studio-Media-Player-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Studio Media Player";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -321,7 +333,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.dannyniu.Studio-Media-Player";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -339,7 +351,7 @@
 				8899FF2B28716C2F00FB08BD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		8899FF2C28716C2F00FB08BD /* Build configuration list for PBXNativeTarget "Studio Media Player" */ = {
 			isa = XCConfigurationList;
@@ -348,7 +360,7 @@
 				8899FF2E28716C2F00FB08BD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

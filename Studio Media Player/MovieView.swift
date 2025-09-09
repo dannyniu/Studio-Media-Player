@@ -157,19 +157,6 @@ class MovieView : NSView
         
         let freq = self.window!.screen!.maximumFramesPerSecond // Should be 120.
         
-        var ts: timespec = .init()
-        var elapsed: Int64
-        
-        clock_gettime(clockid, &ts)
-        elapsed = Int64(ts.tv_sec) - Int64(ts_last.tv_sec)
-        elapsed *= 1000_000_000
-        elapsed += Int64(ts.tv_nsec) - Int64(ts_last.tv_nsec)
-        elapsed *= Int64(freq)
-        // elapsed /= 2000_000_750 // this value had been tested (2024-06-09).
-        elapsed = (elapsed - 32_000_000) / 2016_000_000
-        if( elapsed % 2 >= 1 ) { flip = !flip }
-        ts_last = ts
-        
         let d: CFTimeInterval = displink.targetTimestamp;
         
         if( Int64(d * CFTimeInterval(freq)) % 2 == 1 )

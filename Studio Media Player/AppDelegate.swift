@@ -9,7 +9,7 @@ import Cocoa
 import Foundation
 import AVFoundation
 
-@main
+@NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate
 {
     @IBOutlet var window: NSWindow!
@@ -25,23 +25,16 @@ class AppDelegate: NSObject, NSApplicationDelegate
         mvv.vlink!.add(to: .current, forMode: .default)
     }
     
-    @IBAction func open1media(_ sender: Any)
-    {
-        let opp: NSOpenPanel = .init()
-        opp.canChooseFiles = true
-        opp.canChooseDirectories = false
-        opp.allowsMultipleSelection = false
+    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+        let url: URL = .init(filePath: filename)
         
-        opp.begin(completionHandler: {
-            (res: NSApplication.ModalResponse) -> Void in
-            if( res != NSApplication.ModalResponse.OK ) { return }
-            
-            Task.detached {
-                let ass: AVURLAsset = await .init(url: opp.urls[0])
-                await self.mvv.assign_asset(ass)
-            }
-        })
+        Task.detached {
+            let ass: AVURLAsset = .init(url: url)
+            await self.mvv.assign_asset(ass)
+            await self.mvv.player?.play()
+        }
         
+        return true
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
