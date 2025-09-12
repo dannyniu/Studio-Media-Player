@@ -157,7 +157,10 @@ class MovieView : NSView
         
         let freq = self.window!.screen!.maximumFramesPerSecond // Should be 120.
         
-        let d: CFTimeInterval = displink.targetTimestamp;
+        let d: CFTimeInterval = (
+            displink.timestamp * 5 +
+            displink.targetTimestamp * 3 +
+            CACurrentMediaTime() * 2 )/10;
         
         if( Int64(d * CFTimeInterval(freq)) % 2 == 1 )
         {
