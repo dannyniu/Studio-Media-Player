@@ -14,67 +14,119 @@ import AVKit
 import CoreVideo
 import VideoToolbox
 
-class MovieView : NSView
+class MovieView : NSView, NSWindowDelegate
 {
     var asset: AVAsset?
     var item: AVPlayerItem?
     var vlink: CADisplayLink?
-    var timer: Timer?
-//* #unless USE_AV_PLAYERV_VIEW
     var player: AVPlayer?
-    var playinglayer: CALayer = .init()
-    var playingcontent: CGImage?
     var vidout: AVPlayerVideoOutput = .init(
         specification: .init(tagCollections: [
             .stereoscopicForVideoOutput(),
             .monoscopicForVideoOutput()
         ]))
-//*/
-    
-    let clockid = CLOCK_REALTIME
     
     override var isOpaque: Bool { get { return true } }
     override var wantsUpdateLayer: Bool { get { return true } }
     
+    var cgimg0: CGImage?
+    var cgimg1: CGImage?
     func setup() -> Bool
     {
-        self.asset = nil
-        self.item = nil
-        self.player = .init()
+        asset = nil
+        item = nil
+        player = .init()
         
-        self.player!.preventsDisplaySleepDuringVideoPlayback = true;
+        player!.preventsDisplaySleepDuringVideoPlayback = true;
         
-        clock_gettime(clockid, &ts_last)
+        wantsLayer = true
+        layer!.isOpaque = true
         
-        vlink = self.displayLink(target: self, selector: #selector(video_render))
+        vlink = window!.screen!.displayLink(target: self, selector: #selector(video_render))
         if( vlink == nil ) { return false }
         
-        NSCursor.setHiddenUntilMouseMoves(true)
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true, block: {(timer: Timer) in
-            NSCursor.setHiddenUntilMouseMoves(true)
-        })
-        timer!.fire()
         return true
     }
     
-    var ts_last: timespec = .init()
     var flip: Bool = false
     var eye_right: Bool = false
+    var screenfps: TimeInterval = 1
     var irect: CGRect = .init()
-    var srect: CGRect = .init()
-    var orect: CGRect = .init()
-    var vrect: CGRect = .init()
     var track_is_multiview: Bool = false
+    var track_frame_dur: CMTime = CMTime(value: 1, timescale: 1)
     
     func assign_asset(_ asset: AVAsset) async
     {
         self.asset = asset
         item = .init(asset: self.asset!)
-        self.player?.replaceCurrentItem(with: item)
-        self.player?.videoOutput = self.vidout
+        player?.replaceCurrentItem(with: item)
+        player?.videoOutput = vidout
+        lastTime = CMTime(value: -1, timescale: 1)
         
         await get_track_attrs(try! await asset.load(.tracks))
-        self.layer = self.playinglayer
+    }
+    
+    var lastTime: CMTime = CMTime(value: -1, timescale: 1)
+    
+    func PrepareGraphics()
+    {
+        screenfps = 1 / self.window!.screen!.displayUpdateGranularity
+        bw = bounds.width
+        bh = bounds.height
+        
+            let duration = player!.currentItem?.duration.seconds ?? 1.0
+            progelem.doubleValue = player!.currentTime().seconds * (
+                progelem.maxValue - progelem.minValue
+            ) / duration + progelem.minValue
+            
+        var pixbuf0: CVPixelBuffer?
+        var pixbuf1: CVPixelBuffer?
+        var taggedBufferGroup: [CMTaggedBuffer]?
+        
+        taggedBufferGroup = nil
+        var ptime: CMTime = lastTime
+        
+        (taggedBufferGroup, ptime, _) =
+            vidout.taggedBuffers(
+                forHostTime: CMClockGetTime(
+                    .hostTimeClock)) ?? (nil, lastTime, nil)
+        
+        if( taggedBufferGroup == nil ) { return }
+        if( CMTimeCompare(lastTime, ptime) == 0 ) { return }
+        else { lastTime = ptime }
+        
+        pixbuf0 = nil
+        cgimg0 = nil
+        
+        if( !track_is_multiview )
+        {
+            //== not multi-view codec ==//
+            
+            switch( taggedBufferGroup![0].buffer ) {
+            case let .pixelBuffer(res): pixbuf0 = res
+            default: return }
+            
+            VTCreateCGImageFromCVPixelBuffer(pixbuf0!, options: nil, imageOut: &cgimg0)
+        }
+        else
+        {
+            //== multi-view codec ==//
+            
+            pixbuf1 = nil
+            cgimg1 = nil
+            
+            for taggedBuffer in taggedBufferGroup! {
+                let src_leye = taggedBuffer.tags.contains(.stereoView(.leftEye))
+                switch( taggedBuffer.buffer ) {
+                case let .pixelBuffer(res):
+                    if( src_leye ) { pixbuf0 = res }
+                    else { pixbuf1 = res }
+                default: return }
+            }
+            
+            VTCreateCGImageFromCVPixelBuffer(pixbuf0!, options: nil, imageOut: &cgimg0)
+            VTCreateCGImageFromCVPixelBuffer(pixbuf1!, options: nil, imageOut: &cgimg1)
+        }
     }
     
     func get_track_attrs(_ tracks: [AVAssetTrack]) async
@@ -84,158 +136,123 @@ class MovieView : NSView
             if( track.mediaType != AVMediaType.video ) { continue }
             if( (try? await track.load(.isEnabled)) ?? false )
             {
-                self.irect.size = try! await track.load(.naturalSize)
+                irect.size = try! await track.load(.naturalSize)
             }
+            
+            track_frame_dur = try! await track.load(.minFrameDuration)
             
             if( (try? await track.load(.mediaCharacteristics))?.contains(
                 AVMediaCharacteristic.containsStereoMultiviewVideo) ?? false )
             {
-                self.track_is_multiview = true
+                track_is_multiview = true
             }
-            else { self.track_is_multiview = false }
+            else { track_is_multiview = false }
         }
     }
     
-    func rects_recalc()
+    var bw: CGFloat = 0.5
+    var bh: CGFloat = 0.5
+    
+    func rects_recalc() -> CGRect
     {
-        orect = NSRectToCGRect(bounds)
-        
         var oy: CGFloat = 0
         
-        if( orect.width > 1 && irect.width > 1 )
+        if( bw > 1 && irect.width > 1 )
         {
-            oy = (orect.height -
-                  irect.height *
-                  orect.width /
-                  irect.width) / 2
+            oy = (bh - irect.height *
+                  bw / irect.width) / 2
         }
         
-        let oh: CGFloat = irect.height * orect.width / irect.width
-        let osize: CGSize = CGSize(width: orect.width * 2,
-                                   height: oh)
+        let oh: CGFloat = irect.height * bw / irect.width
+        let osize: CGSize = CGSize(width: bw * 2, height: oh)
         
         if( eye_right != flip ) // right eye.
         {
-            vrect = CGRect(origin: CGPoint(x: -orect.width, y: oy),
-                           size: osize)
+            return CGRect(origin: CGPoint(x: -bw, y: oy), size: osize)
         }
         else // left eye.
         {
-            vrect = CGRect(origin: CGPoint(x: 0, y: oy),
-                           size: osize)
+            return CGRect(origin: CGPoint(x: 0, y: oy), size: osize)
         }
     }
     
-    func rects_fix()
+    func rects_fix() -> CGRect
     {
-        orect = NSRectToCGRect(bounds)
-        
         var oy: CGFloat = 0
         
-        if( orect.width > 1 && irect.width > 1 )
+        if( bw > 1 && irect.width > 1 )
         {
-            oy = (orect.height -
-                  irect.height *
-                  orect.width /
-                  irect.width) / 2
+            oy = (bh - irect.height *
+                  bw / irect.width) / 2
         }
         
-        let oh: CGFloat = irect.height * orect.width / irect.width
-        let osize: CGSize = CGSize(width: orect.width, height: oh)
+        let oh: CGFloat = irect.height * bw / irect.width
+        let osize: CGSize = CGSize(width: bw, height: oh)
         
-        vrect = CGRect(origin: CGPoint(x: 0, y: oy), size: osize)
+        return CGRect(origin: CGPoint(x: 0, y: oy), size: osize)
     }
     
     @IBOutlet var progelem: NSSlider!
     
+    /*
+    let fmt = NumberFormatter()
+    required init(coder: NSCoder)
+    {
+        fmt.numberStyle = .decimal
+        fmt.maximumFractionDigits = 8
+        fmt.minimumFractionDigits = 8
+        super.init(coder: coder)!
+    }// */
+    
     @objc func video_render(displink: CADisplayLink)
     {
-        let t: Double = player!.currentTime().seconds
-        let duration: Double = player!.currentItem?.duration.seconds ?? 1
-        progelem.doubleValue = t * (progelem.maxValue - progelem.minValue) / duration + progelem.minValue
-        // freq = CVGetHostClockFrequency()
+        PrepareGraphics()
+        if( asset == nil || irect.width <= 1 ) { return }
+        if( cgimg0 == nil ) { return }
         
-        let freq = self.window!.screen!.maximumFramesPerSecond // Should be 120.
+        screenfps = 1 / self.window!.screen!.displayUpdateGranularity
+        bw = bounds.width
+        bh = bounds.height
         
-        let d: CFTimeInterval = (
-            displink.timestamp * 5 +
-            displink.targetTimestamp * 3 +
-            CACurrentMediaTime() * 2 )/10;
+        let d: CFTimeInterval = displink.targetTimestamp
         
-        if( Int64(d * CFTimeInterval(freq)) % 2 == 1 )
+        if( fmod(d * screenfps + 0.13, 2) >= 1 )
         {
             eye_right = true
         }
         else { eye_right = false }
         
-        if( self.asset != nil && self.irect.width > 0 )
+        if( !track_is_multiview )
         {
-            var pixbuf: CVPixelBuffer?
-            var taggedBufferGroup: [CMTaggedBuffer]?
+            //== not multi-view codec ==//
             
-            (taggedBufferGroup, _, _) =
-                vidout.taggedBuffers(
-                    forHostTime: CMClockGetTime(
-                        .hostTimeClock)) ?? (nil, nil, nil)
-            if( taggedBufferGroup == nil ){ return }
-            switch( taggedBufferGroup![0].buffer ) {
-            case let .pixelBuffer(res): pixbuf = res
-            default: return }
+            //if( cgimg0 != nil )
+            layer!.contents = cgimg0
             
-            let tx: CGAffineTransform
-            
-            if( !self.track_is_multiview )
-            {
-                //== not multi-view codec ==//
-                
-                VTCreateCGImageFromCVPixelBuffer(
-                    pixbuf!, options: nil, imageOut: &playingcontent)
-                playinglayer.contents = playingcontent
-                
-                CATransaction.begin()
-                CATransaction.setDisableActions(true)
-                tx = .init(scaleX: 2.0, y: 1.0)
-                self.layer!.setAffineTransform(tx)
-                self.rects_recalc()
-                self.layer!.frame = self.vrect
-                //print(self.eye_right, self.vrect)
-                CATransaction.commit()
-            }
-            else
-            {
-                //== multi-view codec ==//
-                
-                for taggedBuffer in taggedBufferGroup! {
-                    let dispcond = eye_right != flip
-                    let src_reye = taggedBuffer.tags.contains(.stereoView(.rightEye))
-                    let src_leye = !taggedBuffer.tags.contains(.stereoView(.leftEye))
-                    if( dispcond == src_reye && src_reye == src_leye )
-                    {
-                        switch( taggedBuffer.buffer ) {
-                        case let .pixelBuffer(res): pixbuf = res
-                        default: return }
-                        break
-                    }
-                }
-                
-                VTCreateCGImageFromCVPixelBuffer(
-                    pixbuf!, options: nil, imageOut: &playingcontent)
-                playinglayer.contents = playingcontent
-                
-                CATransaction.begin()
-                CATransaction.setDisableActions(true)
-                tx = .init(scaleX: 2.0, y: 1.0)
-                self.layer!.setAffineTransform(tx)
-                self.rects_fix()
-                self.layer!.frame = self.vrect
-                //print(self.eye_right, self.vrect)
-                CATransaction.commit()
-            }
+            //CATransaction.begin()
+            layer!.frame = rects_recalc()
+            //CATransaction.commit()
         }
-        //self.needsDisplay = true
-        self.window!.display()
+        else
+        {
+            //== multi-view codec ==//
+            
+            layer!.contents = (eye_right != flip) ? cgimg0 : cgimg1
+            
+            // CATransaction.begin()
+            layer!.frame = rects_fix()
+            // CATransaction.commit()
+        }
+        
+        layer!.setNeedsDisplay()
+        needsDisplay = true
+        window!.viewsNeedDisplay = true
+        display()
+        window!.display()
+        window!.displayIfNeeded()
+        //let b = CACurrentMediaTime()
+        //print("timediff="+(fmt.string(from: NSNumber(value: d-b)) ?? "-"))
     }
-    
     
     @IBAction func skipforward(_ sender: Any)
     {
@@ -303,5 +320,15 @@ class MovieView : NSView
     @IBAction func setvol(_ sender: NSSlider)
     {
         player!.volume = Float(unitrange(sender))
+    }
+    
+    @IBAction func hideCursor(_ sender: Any)
+    {
+        NSCursor.setHiddenUntilMouseMoves(true)
+    }
+    
+    func windowDidEnterFullScreen(_ notification: Notification)
+    {
+        NSCursor.setHiddenUntilMouseMoves(true)
     }
 }

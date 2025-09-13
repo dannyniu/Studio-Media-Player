@@ -198,6 +198,12 @@
                                     <action selector="ToggleWidgetView:" target="Voe-Tx-rLC" id="Qfy-7E-A3H"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Hide Cursor" keyEquivalent="" id="hrw-A6-6kz">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="hideCursor:" target="Qju-S2-pXw" id="69p-i6-kXd"/>
+                                </connections>
+                            </menuItem>
                         </items>
                     </menu>
                 </menuItem>
@@ -285,7 +291,10 @@
                     </customView>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="132" y="608"/>
+            <connections>
+                <outlet property="delegate" destination="Qju-S2-pXw" id="Qiz-J0-9lK"/>
+            </connections>
+            <point key="canvasLocation" x="145" y="652"/>
         </window>
     </objects>
 </document>

@@ -38,6 +38,7 @@ class MovieDoc: NSDocument {
             let ass: AVURLAsset = .init(url: url)
             await self.appd.mvv.assign_asset(ass)
             await self.appd.mvv.player?.play()
+            NSCursor.setHiddenUntilMouseMoves(true)
         }
         
     }
