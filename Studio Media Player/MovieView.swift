@@ -30,7 +30,7 @@ class MovieView : NSView, NSWindowDelegate
     override var wantsUpdateLayer: Bool { get { return true } }
     
     var cgimg0: CGImage?
-    var cgimg1: CGImage?
+    //var cgimg1: CGImage?
     func setup() -> Bool
     {
         asset = nil
@@ -70,63 +70,51 @@ class MovieView : NSView, NSWindowDelegate
     
     func PrepareGraphics()
     {
+        var cgimg: CGImage?
         screenfps = 1 / self.window!.screen!.displayUpdateGranularity
         bw = bounds.width
         bh = bounds.height
         
-            let duration = player!.currentItem?.duration.seconds ?? 1.0
-            progelem.doubleValue = player!.currentTime().seconds * (
-                progelem.maxValue - progelem.minValue
-            ) / duration + progelem.minValue
-            
-        var pixbuf0: CVPixelBuffer?
-        var pixbuf1: CVPixelBuffer?
-        var taggedBufferGroup: [CMTaggedBuffer]?
+        let duration = player!.currentItem?.duration.seconds ?? 1.0
+        progelem.doubleValue = player!.currentTime().seconds * (
+            progelem.maxValue - progelem.minValue
+        ) / duration + progelem.minValue
         
-        taggedBufferGroup = nil
-        var ptime: CMTime = lastTime
-        
-        (taggedBufferGroup, ptime, _) =
-            vidout.taggedBuffers(
+        var taggedBufferGroup: [CMTaggedDynamicBuffer]? =
+            vidout.sample(
                 forHostTime: CMClockGetTime(
-                    .hostTimeClock)) ?? (nil, lastTime, nil)
+                    .hostTimeClock))?.taggedBuffers
         
         if( taggedBufferGroup == nil ) { return }
-        if( CMTimeCompare(lastTime, ptime) == 0 ) { return }
-        else { lastTime = ptime }
-        
-        pixbuf0 = nil
-        cgimg0 = nil
         
         if( !track_is_multiview )
         {
             //== not multi-view codec ==//
             
-            switch( taggedBufferGroup![0].buffer ) {
-            case let .pixelBuffer(res): pixbuf0 = res
-            default: return }
-            
-            VTCreateCGImageFromCVPixelBuffer(pixbuf0!, options: nil, imageOut: &cgimg0)
+            switch( taggedBufferGroup![0].content ) {
+            case let .pixelBuffer(res): _ = res.withUnsafeBuffer {
+                (ures: CVPixelBuffer) in
+                VTCreateCGImageFromCVPixelBuffer(ures, options: nil, imageOut: &cgimg)
+            }
+            default: assert( false ) }
         }
         else
         {
             //== multi-view codec ==//
             
-            pixbuf1 = nil
-            cgimg1 = nil
+            let wanted_eye: CMStereoViewComponents = (eye_right == flip) ? .leftEye : .rightEye
             
             for taggedBuffer in taggedBufferGroup! {
-                let src_leye = taggedBuffer.tags.contains(.stereoView(.leftEye))
-                switch( taggedBuffer.buffer ) {
-                case let .pixelBuffer(res):
-                    if( src_leye ) { pixbuf0 = res }
-                    else { pixbuf1 = res }
-                default: return }
+                if( taggedBuffer.tags.contains(.stereoView(wanted_eye)) ) { continue }
+                switch( taggedBuffer.content ) {
+                case let .pixelBuffer(res): _ = res.withUnsafeBuffer {
+                    (ures: CVPixelBuffer) in
+                    VTCreateCGImageFromCVPixelBuffer(ures, options: nil, imageOut: &cgimg)
+                }
+                default: assert( false ) }
             }
-            
-            VTCreateCGImageFromCVPixelBuffer(pixbuf0!, options: nil, imageOut: &cgimg0)
-            VTCreateCGImageFromCVPixelBuffer(pixbuf1!, options: nil, imageOut: &cgimg1)
         }
+        cgimg0 = cgimg
     }
     
     func get_track_attrs(_ tracks: [AVAssetTrack]) async
@@ -146,7 +134,10 @@ class MovieView : NSView, NSWindowDelegate
             {
                 track_is_multiview = true
             }
-            else { track_is_multiview = false }
+            else
+            {
+                track_is_multiview = false
+            }
         }
     }
     
@@ -194,64 +185,31 @@ class MovieView : NSView, NSWindowDelegate
     
     @IBOutlet var progelem: NSSlider!
     
-    /*
-    let fmt = NumberFormatter()
-    required init(coder: NSCoder)
-    {
-        fmt.numberStyle = .decimal
-        fmt.maximumFractionDigits = 8
-        fmt.minimumFractionDigits = 8
-        super.init(coder: coder)!
-    }// */
-    
     @objc func video_render(displink: CADisplayLink)
     {
-        PrepareGraphics()
-        if( asset == nil || irect.width <= 1 ) { return }
-        if( cgimg0 == nil ) { return }
-        
         screenfps = 1 / self.window!.screen!.displayUpdateGranularity
         bw = bounds.width
         bh = bounds.height
         
         let d: CFTimeInterval = displink.targetTimestamp
         
-        if( fmod(d * screenfps + 0.13, 2) >= 1 )
+        if( fmod(d * screenfps, 2) >= 1 )
         {
             eye_right = true
         }
         else { eye_right = false }
         
-        if( !track_is_multiview )
-        {
-            //== not multi-view codec ==//
-            
-            //if( cgimg0 != nil )
-            layer!.contents = cgimg0
-            
-            //CATransaction.begin()
-            layer!.frame = rects_recalc()
-            //CATransaction.commit()
-        }
-        else
-        {
-            //== multi-view codec ==//
-            
-            layer!.contents = (eye_right != flip) ? cgimg0 : cgimg1
-            
-            // CATransaction.begin()
-            layer!.frame = rects_fix()
-            // CATransaction.commit()
-        }
+        PrepareGraphics()
+        if( asset == nil || irect.width <= 1 ) { return }
+        if( cgimg0 == nil ) { return }
         
-        layer!.setNeedsDisplay()
-        needsDisplay = true
-        window!.viewsNeedDisplay = true
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        layer!.contents = cgimg0
+        layer!.frame = track_is_multiview ? rects_fix() : rects_recalc()
+        CATransaction.commit()
+        
         display()
-        window!.display()
-        window!.displayIfNeeded()
-        //let b = CACurrentMediaTime()
-        //print("timediff="+(fmt.string(from: NSNumber(value: d-b)) ?? "-"))
     }
     
     @IBAction func skipforward(_ sender: Any)
